@@ -1,0 +1,31 @@
+name: Cute Animals Channel
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 17 * * *'
+
+jobs:
+  hayvan-videosu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Install Dependencies
+        run: npm install
+      - name: Hayvan Videosu Olustur
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+        run: node schedules/animal-video.js
