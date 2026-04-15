@@ -1,6 +1,15 @@
-hayvan-videosu:
+name: Cute Animals Channel
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * *'   # 10:00 TR
+    - cron: '0 12 * * *'  # 15:00 TR
+    - cron: '0 17 * * *'  # 20:00 TR
+
+jobs:
+  hayvan-videosu:
     runs-on: ubuntu-latest
-    if: always()
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
