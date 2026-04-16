@@ -46,14 +46,8 @@ function sleep(ms) {
 
 // Video tipini belirle (saat bazlı)
 function getVideoTheme() {
-  var hour = (new Date().getUTCHours() + 3) % 24;
-  if (hour >= 8 && hour < 13) {
-    return 'funny'; // Sabah neşeli
-  } else if (hour >= 13 && hour < 18) {
-    return 'cute';  // Öğleden sonra sevimli
-  } else {
-    return Math.random() > 0.5 ? 'funny' : 'cute'; // Akşam karışık
-  }
+  // Her zaman eğlenceli/komik
+  return 'funny';
 }
 
 // Tema bazlı Pexels sorguları
