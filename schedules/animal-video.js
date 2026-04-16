@@ -12,6 +12,8 @@ var YOUTUBE_CLIENT_ID = process.env.YOUTUBE_CLIENT_ID;
 var YOUTUBE_CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET;
 var YOUTUBE_REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN;
 
+// ─── YARDIMCILAR ─────────────────────────────────────────
+
 function downloadFile(url, dest) {
   return new Promise(function(resolve, reject) {
     var file = fs.createWriteStream(dest);
@@ -44,57 +46,66 @@ function sleep(ms) {
   return new Promise(function(r) { setTimeout(r, ms); });
 }
 
-// Video tipini belirle (saat bazlı)
-function getVideoTheme() {
-  // Her zaman eğlenceli/komik
-  return 'funny';
+// ─── PEXELS SORGULARI ────────────────────────────────────
+
+function getPexelsQueries() {
+  var allQueries = [
+    'funny cat fails',
+    'dog playing funny',
+    'baby goat jumping',
+    'funny hamster running wheel',
+    'puppy zoomies',
+    'cat scared funny',
+    'dog fail funny',
+    'kitten playing attacking',
+    'funny rabbit',
+    'corgi running',
+    'cat knocking things',
+    'dog confused funny',
+    'baby duck walking',
+    'cat box funny',
+    'dog eating messy funny',
+    'goat screaming',
+    'cat mirror reaction',
+    'puppy howling',
+    'dog zoomies grass',
+    'animals funny compilation',
+    'cat chattering',
+    'puppy playing ball',
+    'dog shaking head',
+    'cat loaf funny',
+    'ferret playing funny',
+    'bunny binkying',
+    'dog tail chasing',
+    'cat spinning funny',
+    'puppy hiccups',
+    'dog head tilt funny',
+  ];
+
+  var now = new Date();
+  var seed = now.getDate() * 100 + now.getUTCHours();
+  var start = seed % allQueries.length;
+  var selected = [];
+
+  for (var i = 0; i < 8; i++) {
+    selected.push(allQueries[(start + i * 4) % allQueries.length]);
+  }
+
+  console.log('Sorgular:', selected.slice(0, 4).join(', ') + '...');
+  return selected;
 }
 
-// Tema bazlı Pexels sorguları
-function getPexelsQueries(theme) {
-  var funnyQueries = [
-    'funny cat playing',
-    'cute dog running funny',
-    'baby goat jumping playing',
-    'funny bunny eating',
-    'cute hamster running wheel',
-    'puppy playing ball funny',
-    'kitten chasing toy funny',
-    'dog shaking head funny',
-  ];
+// ─── VİDEO İNDİR ─────────────────────────────────────────
 
-  var cuteQueries = [
-    'cute cat sleeping cozy',
-    'adorable puppy cuddling',
-    'baby duck swimming cute',
-    'cute rabbit eating vegetables',
-    'tiny kitten yawning cute',
-    'fluffy cat grooming',
-    'baby animals cute nature',
-    'golden retriever puppy cute',
-  ];
-
-  var queries = theme === 'funny' ? funnyQueries : cuteQueries;
-
-  // Her gün farklı sorgular için tarihe göre seç
-  var day = new Date().getDay();
-  var start = (day * 2) % queries.length;
-  return [
-    queries[start % queries.length],
-    queries[(start + 1) % queries.length],
-    queries[(start + 2) % queries.length],
-    queries[(start + 3) % queries.length],
-    queries[(start + 4) % queries.length],
-  ];
-}
-
-// Pexels'tan video indir
-async function downloadAnimalVideos(theme) {
-  console.log('Hayvan videolari indiriliyor, tema:', theme);
-  var queries = getPexelsQueries(theme);
+async function downloadAnimalVideos() {
+  console.log('Hayvan videolari indiriliyor...');
+  var queries = getPexelsQueries();
   var paths = [];
+  var usedIds = [];
 
   for (var i = 0; i < queries.length; i++) {
+    if (paths.length >= 5) break;
+
     try {
       // Önce portrait dene
       var response = await fetch(
@@ -105,7 +116,7 @@ async function downloadAnimalVideos(theme) {
       var data = await response.json();
       var videos = data.videos || [];
 
-      // Portrait bulamazsa landscape dene
+      // Bulamazsa landscape dene
       if (videos.length === 0) {
         response = await fetch(
           'https://api.pexels.com/videos/search?query=' +
@@ -117,81 +128,87 @@ async function downloadAnimalVideos(theme) {
       }
 
       if (videos.length === 0) {
-        console.log('  Video bulunamadi:', queries[i]);
+        console.log('  Bulunamadi:', queries[i]);
         continue;
       }
 
-      // En iyi kaliteyi seç, 30 saniyeden kısa olanı tercih et
-      var video = videos.find(function(v) { return v.duration <= 30; }) || videos[0];
+      // Daha önce kullanılmamış video seç
+      var video = null;
+      for (var j = 0; j < videos.length; j++) {
+        if (usedIds.indexOf(videos[j].id) === -1) {
+          video = videos[j];
+          break;
+        }
+      }
+      if (!video) continue;
+      usedIds.push(video.id);
+
+      // En iyi kaliteyi seç
       var vf = video.video_files
         .filter(function(f) { return f.width && f.height; })
         .sort(function(a, b) { return b.height - a.height; })[0];
 
       if (!vf) continue;
 
-      var vPath = '/tmp/animal_' + i + '.mp4';
-      console.log('  İndiriliyor:', queries[i], '(' + video.duration + 's)');
+      var vPath = '/tmp/animal_' + paths.length + '.mp4';
+      console.log('  İndiriliyor:', queries[i], '| ID:', video.id, '| Sure:', video.duration + 's');
       await downloadFile(vf.link, vPath);
       paths.push({ path: vPath, duration: video.duration });
       await sleep(400);
 
     } catch(e) {
-      console.log('  Pexels hata:', queries[i], e.message);
+      console.log('  Hata:', queries[i], e.message);
     }
   }
 
-  console.log(paths.length, 'hayvan videosu indirildi');
-  if (paths.length < 2) throw new Error('Yeterli video indirilemedi: ' + paths.length);
+  console.log(paths.length, 'video indirildi');
+  if (paths.length < 2) throw new Error('Yeterli video yok: ' + paths.length);
   return paths;
 }
 
-// Müzik dosyasını seç
-function selectMusic(theme) {
-  var musicDir = path.join(__dirname, '..', 'music');
-  var files = fs.readdirSync(musicDir);
+// ─── MÜZİK SEÇ ───────────────────────────────────────────
 
-  var themeFiles = files.filter(function(f) {
-    return f.startsWith(theme) && f.endsWith('.mp3');
+function selectMusic() {
+  var musicDir = path.join(__dirname, '..', 'music');
+  var files = fs.readdirSync(musicDir).filter(function(f) {
+    return f.endsWith('.mp3');
   });
 
-  if (themeFiles.length === 0) {
-    // Fallback: herhangi bir müzik
-    themeFiles = files.filter(function(f) { return f.endsWith('.mp3'); });
-  }
+  if (files.length === 0) throw new Error('Muzik dosyasi bulunamadi!');
 
-  if (themeFiles.length === 0) throw new Error('Muzik dosyasi bulunamadi!');
-
-  // Günlük rotasyon
-  var day = new Date().getDay();
-  var selected = themeFiles[day % themeFiles.length];
-  var musicPath = path.join(musicDir, selected);
-  console.log('Muzik secildi:', selected);
-  return musicPath;
+  // Gün + saate göre farklı müzik
+  var now = new Date();
+  var index = (now.getDate() + now.getUTCHours()) % files.length;
+  var selected = files[index];
+  console.log('Muzik:', selected);
+  return path.join(musicDir, selected);
 }
 
-// Thumbnail oluştur
-async function createThumbnail(videoPath, theme) {
+// ─── THUMBNAIL ────────────────────────────────────────────
+
+async function createThumbnail(videoPath) {
   console.log('Thumbnail olusturuluyor...');
 
+  // Video'dan kare al
   await new Promise(function(resolve, reject) {
     ffmpeg(videoPath)
       .outputOptions([
         '-vframes 1',
+        '-ss 00:00:02',
         '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920',
       ])
       .output('/tmp/thumb_raw.jpg')
-      .on('end', resolve).on('error', reject).run();
+      .on('end', resolve)
+      .on('error', reject)
+      .run();
   });
 
-  var emoji = theme === 'funny' ? '😂' : '🥰';
-  var title = theme === 'funny' ? 'SO FUNNY!' : 'SO CUTE!';
-  var sub = theme === 'funny' ? 'Try not to laugh 😂' : 'Adorable animals 🥰';
-
+  // Başlık ekle
   await runCommand(
     'ffmpeg -y -i /tmp/thumb_raw.jpg ' +
     '-vf "' +
-    'drawtext=text=\'' + title + '\':fontsize=110:fontcolor=white:x=(w-text_w)/2:y=80:shadowcolor=black:shadowx=5:shadowy=5,' +
-    'drawtext=text=\'' + sub + '\':fontsize=50:fontcolor=yellow:x=(w-text_w)/2:y=220:shadowcolor=black:shadowx=3:shadowy=3' +
+    'drawtext=text=\'TRY NOT TO LAUGH\':fontsize=95:fontcolor=white:x=(w-text_w)/2:y=100:shadowcolor=black:shadowx=5:shadowy=5,' +
+    'drawtext=text=\'😂 Funny Animals 😂\':fontsize=55:fontcolor=yellow:x=(w-text_w)/2:y=240:shadowcolor=black:shadowx=3:shadowy=3' +
     '" /tmp/thumbnail.jpg'
   );
 
@@ -199,25 +216,22 @@ async function createThumbnail(videoPath, theme) {
   return '/tmp/thumbnail.jpg';
 }
 
-// Ana video montajı
-async function createFinalVideo(videoPaths, musicPath, theme) {
+// ─── VİDEO MONTAJI ───────────────────────────────────────
+
+async function createFinalVideo(videos, musicPath) {
   console.log('Video montaji yapiliyor...');
 
-  var TARGET_DURATION = 55; // Shorts max
-  var clipCount = Math.min(videoPaths.length, 5);
-  var clipDuration = TARGET_DURATION / clipCount;
+  var TARGET = 58;
+  var count = Math.min(videos.length, 5);
+  var clipDur = TARGET / count;
   var trimmed = [];
 
-  // Her klibi dikey formata çevir
-  for (var i = 0; i < clipCount; i++) {
+  for (var i = 0; i < count; i++) {
     var tp = '/tmp/trimmed_' + i + '.mp4';
-    var inputDur = Math.min(clipDuration, videoPaths[i].duration || clipDuration);
-
     await new Promise(function(resolve, reject) {
-      ffmpeg(videoPaths[i].path)
+      ffmpeg(videos[i].path)
         .outputOptions([
-          '-t ' + clipDuration,
-          // Dikey format + güzel crop
+          '-t ' + clipDur,
           '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1',
           '-r 30',
           '-c:v libx264',
@@ -231,7 +245,7 @@ async function createFinalVideo(videoPaths, musicPath, theme) {
         .run();
     });
     trimmed.push(tp);
-    console.log('  Klip', i + 1, '/', clipCount, 'hazir');
+    console.log('  Klip', i + 1, '/', count, 'hazir');
   }
 
   // Klipleri birleştir
@@ -248,23 +262,22 @@ async function createFinalVideo(videoPaths, musicPath, theme) {
       .on('end', resolve).on('error', reject).run();
   });
 
-  // Müzik ekle — video süresine göre loop veya kes
+  // Müzik ekle
   var finalPath = '/tmp/final_animal.mp4';
   await new Promise(function(resolve, reject) {
     ffmpeg()
       .input(mergedPath)
       .input(musicPath)
-      .inputOptions(['-stream_loop -1']) // Müziği loop yap
+      .inputOptions(['-stream_loop -1'])
       .outputOptions([
         '-map 0:v:0',
         '-map 1:a:0',
         '-c:v copy',
         '-c:a aac',
         '-b:a 192k',
-        '-shortest', // Video bitince dur
+        '-shortest',
         '-movflags +faststart',
-        // Ses fade out son 2 saniye
-        '-af afade=t=out:st=' + (TARGET_DURATION - 2) + ':d=2',
+        '-af afade=t=out:st=' + (TARGET - 3) + ':d=3',
       ])
       .output(finalPath)
       .on('end', resolve).on('error', reject).run();
@@ -275,51 +288,56 @@ async function createFinalVideo(videoPaths, musicPath, theme) {
   return finalPath;
 }
 
-// YouTube metadata
-function getMetadata(theme) {
-  var day = new Date().getDay();
+// ─── METADATA ─────────────────────────────────────────────
 
-  var funnyTitles = [
+function getMetadata() {
+  var now = new Date();
+  var day = now.getDay();
+  var hour = (now.getUTCHours() + 3) % 24;
+
+  var titles = [
     'Funny Animals That Will Make You Laugh 😂 #Shorts',
     'Try Not To Laugh - Funniest Animals 🐱🐶 #Shorts',
     'Hilarious Animals Compilation 😂 #Shorts',
     'Funny Cats and Dogs Moments 😹 #Shorts',
-    'Animals Being Goofballs 🐾 #Shorts',
+    'Animals Being Total Goofballs 🐾 #Shorts',
     'When Animals Are Too Funny 😂 #Shorts',
     'Funniest Animal Moments Of The Day 🐶 #Shorts',
+    'Animals That Will Crack You Up 😂 #Shorts',
+    'Crazy Funny Animal Moments 🤣 #Shorts',
+    'These Animals Are Hilarious 😹 #Shorts',
+    'You Will Laugh At These Animals 😂 #Shorts',
+    'Funniest Pets Compilation 🐾 #Shorts',
+    'Animals Being Derpy And Funny 😂 #Shorts',
+    'Pets Do The Funniest Things 🐾 #Shorts',
+    'Funny Animal Fails Of The Day 😂 #Shorts',
+    'When Pets Act Crazy Funny 🤣 #Shorts',
+    'Laugh Out Loud Funny Animals 😂 #Shorts',
+    'Best Funny Animal Moments 🐱 #Shorts',
+    'Animals Gone Wild And Funny 😹 #Shorts',
+    'Daily Funny Animals Dose 😂 #Shorts',
+    'Hilarious Pet Moments Today 🐶 #Shorts',
   ];
 
-  var cuteTitles = [
-    'Cute Animals That Will Melt Your Heart 🥰 #Shorts',
-    'Adorable Baby Animals Compilation 🐾 #Shorts',
-    'The Cutest Animals You Will See Today 😍 #Shorts',
-    'Sweet Animal Moments That Heal Your Soul 🥰 #Shorts',
-    'Precious Animals Being Adorable 💕 #Shorts',
-    'Cutest Animal Videos To Brighten Your Day ☀️ #Shorts',
-    'Baby Animals So Cute It Hurts 🥺 #Shorts',
-  ];
-
-  var titles = theme === 'funny' ? funnyTitles : cuteTitles;
-  var title = titles[day % titles.length];
-
-  var tags = theme === 'funny'
-    ? ['funny animals', 'funny cats', 'funny dogs', 'animal fails', 'cute pets', 'shorts', 'animals']
-    : ['cute animals', 'adorable pets', 'baby animals', 'cute cats', 'cute dogs', 'shorts', 'animals'];
-
-  var hashtags = theme === 'funny'
-    ? '#FunnyAnimals #FunnyCats #FunnyDogs #Pets #Shorts #Animals #Cute'
-    : '#CuteAnimals #AdorablePets #BabyAnimals #CuteCats #CuteDogs #Shorts #Animals';
+  var index = (day * 3 + Math.floor(hour / 8)) % titles.length;
 
   return {
-    title: title,
-    description: theme === 'funny'
-      ? 'Daily dose of funny animals! 😂 Watch the funniest animal moments. Like & Subscribe for more!\n\n' + hashtags
-      : 'Daily dose of cute animals! 🥰 The most adorable animal moments. Like & Subscribe for more!\n\n' + hashtags,
-    tags: tags,
+    title: titles[index],
+    description: 'Daily dose of funny animals! 😂\n' +
+      'Watch the funniest animal moments of the day.\n' +
+      'Like & Subscribe for more funny animals every day!\n\n' +
+      '#FunnyAnimals #FunnyCats #FunnyDogs #Pets #Shorts ' +
+      '#Animals #Hilarious #Comedy #PetFails #CutePets',
+    tags: [
+      'funny animals', 'funny cats', 'funny dogs',
+      'animal fails', 'cute pets', 'shorts', 'animals',
+      'hilarious', 'pets', 'comedy', 'pet videos', 'try not to laugh',
+    ],
   };
 }
 
-// YouTube'a yükle
+// ─── YOUTUBE UPLOAD ───────────────────────────────────────
+
 async function uploadToYouTube(meta, videoPath, thumbnailPath) {
   console.log('YouTube a yukleniyor...');
 
@@ -339,7 +357,7 @@ async function uploadToYouTube(meta, videoPath, thumbnailPath) {
         title: meta.title,
         description: meta.description,
         tags: meta.tags,
-        categoryId: '15', // Pets & Animals
+        categoryId: '15',
         defaultLanguage: 'en',
         defaultAudioLanguage: 'en',
       },
@@ -367,36 +385,29 @@ async function uploadToYouTube(meta, videoPath, thumbnailPath) {
   return videoId;
 }
 
-// Ana fonksiyon
+// ─── ANA FONKSİYON ───────────────────────────────────────
+
 async function main() {
-  console.log('Hayvan videosu uretiliyor...\n');
-
-  var theme = getVideoTheme();
-  console.log('Tema:', theme, '| Saat:', (new Date().getUTCHours() + 3) % 24);
-
+  console.log('Funny hayvan videosu uretiliyor...\n');
   var tempFiles = [];
 
   try {
-    // 1. Videoları indir
-    var videos = await downloadAnimalVideos(theme);
+    var videos = await downloadAnimalVideos();
     tempFiles = tempFiles.concat(videos.map(function(v) { return v.path; }));
 
-    // 2. Müzik seç
-    var musicPath = selectMusic(theme);
+    var musicPath = selectMusic();
 
-    // 3. Video montajı
-    var finalVideo = await createFinalVideo(videos, musicPath, theme);
+    var finalVideo = await createFinalVideo(videos, musicPath);
     tempFiles.push(finalVideo);
 
-    // 4. Thumbnail
-    var thumbnail = await createThumbnail(videos[0].path, theme);
+    var thumbnail = await createThumbnail(videos[0].path);
     tempFiles.push(thumbnail);
 
-    // 5. YouTube'a yükle
-    var meta = getMetadata(theme);
+    var meta = getMetadata();
+    console.log('Baslik:', meta.title);
+
     var videoId = await uploadToYouTube(meta, finalVideo, thumbnail);
 
-    // Temizlik
     tempFiles.forEach(function(f) { try { fs.unlinkSync(f); } catch(e) {} });
 
     console.log('\nBASARILI!');
