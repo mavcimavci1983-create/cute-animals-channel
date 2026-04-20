@@ -189,7 +189,6 @@ function selectMusic() {
 async function createThumbnail(videoPath) {
   console.log('Thumbnail olusturuluyor...');
 
-  // Video'dan kare al
   await new Promise(function(resolve, reject) {
     ffmpeg(videoPath)
       .outputOptions([
@@ -203,13 +202,32 @@ async function createThumbnail(videoPath) {
       .run();
   });
 
-  // Başlık ekle
+  // Trend thumbnail formatı — emoji + büyük metin + kontrast
+  var now = new Date();
+  var texts = [
+    { top: 'WAIT FOR IT', bottom: '😂 So Funny!' },
+    { top: 'I CANT STOP', bottom: '😹 Laughing!' },
+    { top: 'THIS IS TOO', bottom: '😂 Much!' },
+    { top: 'NO WAY THIS', bottom: '😹 Happened!' },
+    { top: 'WATCH TILL', bottom: '😂 The End!' },
+    { top: 'YOU WONT', bottom: '😹 Believe This!' },
+    { top: 'POV: BEST', bottom: '🐾 Pet Ever!' },
+    { top: 'CAUGHT ON', bottom: '😂 Camera!' },
+  ];
+  var t = texts[now.getDate() % texts.length];
+
   await runCommand(
     'ffmpeg -y -i /tmp/thumb_raw.jpg ' +
     '-vf "' +
-    'drawtext=text=\'TRY NOT TO LAUGH\':fontsize=95:fontcolor=white:x=(w-text_w)/2:y=100:shadowcolor=black:shadowx=5:shadowy=5,' +
-    'drawtext=text=\'😂 Funny Animals 😂\':fontsize=55:fontcolor=yellow:x=(w-text_w)/2:y=240:shadowcolor=black:shadowx=3:shadowy=3' +
-    '" /tmp/thumbnail.jpg'
+    // Üst gradient
+    'drawbox=x=0:y=0:w=1080:h=300:color=black@0.7:t=fill,' +
+    // Alt gradient  
+    'drawbox=x=0:y=1620:w=1080:h=300:color=black@0.7:t=fill,' +
+    // Üst metin
+    'drawtext=text=\'' + t.top + '\':fontsize=115:fontcolor=white:x=(w-text_w)/2:y=80:shadowcolor=black:shadowx=5:shadowy=5,' +
+    // Alt metin
+    'drawtext=text=\'' + t.bottom + '\':fontsize=95:fontcolor=yellow:x=(w-text_w)/2:y=1650:shadowcolor=black:shadowx=4:shadowy=4" ' +
+    '/tmp/thumbnail.jpg'
   );
 
   console.log('Thumbnail hazir');
@@ -296,42 +314,41 @@ function getMetadata() {
   var hour = (now.getUTCHours() + 3) % 24;
 
   var titles = [
-    'Funny Animals That Will Make You Laugh 😂 #Shorts',
-    'Try Not To Laugh - Funniest Animals 🐱🐶 #Shorts',
-    'Hilarious Animals Compilation 😂 #Shorts',
-    'Funny Cats and Dogs Moments 😹 #Shorts',
-    'Animals Being Total Goofballs 🐾 #Shorts',
-    'When Animals Are Too Funny 😂 #Shorts',
-    'Funniest Animal Moments Of The Day 🐶 #Shorts',
-    'Animals That Will Crack You Up 😂 #Shorts',
-    'Crazy Funny Animal Moments 🤣 #Shorts',
-    'These Animals Are Hilarious 😹 #Shorts',
-    'You Will Laugh At These Animals 😂 #Shorts',
-    'Funniest Pets Compilation 🐾 #Shorts',
-    'Animals Being Derpy And Funny 😂 #Shorts',
-    'Pets Do The Funniest Things 🐾 #Shorts',
-    'Funny Animal Fails Of The Day 😂 #Shorts',
-    'When Pets Act Crazy Funny 🤣 #Shorts',
-    'Laugh Out Loud Funny Animals 😂 #Shorts',
-    'Best Funny Animal Moments 🐱 #Shorts',
-    'Animals Gone Wild And Funny 😹 #Shorts',
-    'Daily Funny Animals Dose 😂 #Shorts',
-    'Hilarious Pet Moments Today 🐶 #Shorts',
+    'When cats do the UNEXPECTED 😹 #cats #funny #shorts',
+    'This dog made everyone laugh 😂 #dogs #funny #shorts',
+    'POV: Your pet is a comedian 🐾 #pets #funny #shorts',
+    'Try not to laugh at these animals 😂 #animals #shorts',
+    'Animals being absolutely unhinged 😹 #funny #shorts',
+    'Your daily dose of animal therapy 🐾 #cute #shorts',
+    'This little guy has no fear 😂 #animals #funny #shorts',
+    'Animals that broke the internet 😹 #viral #shorts',
+    'When your pet has main character energy 😂 #pets #shorts',
+    'Real reason why we love animals 🥰 #animals #shorts',
+    'Animals doing their best impression 😹 #funny #shorts',
+    'This made my day instantly 😂 #animals #cute #shorts',
+    'POV: Animals are living their best life 🐾 #shorts',
+    'Funniest animal moments of the week 😹 #shorts',
+    'Animals that deserve an Oscar 😂 #funny #shorts',
+    'When animals have zero chill 😹 #cats #dogs #shorts',
+    'These animals are too precious 🥰 #cute #shorts',
+    'Animals caught in 4K being funny 😂 #shorts',
+    'Nobody told them they were being recorded 😹 #shorts',
+    'Animals living rent free in my head 😂 #shorts',
+    'The most wholesome animal video today 🥰 #shorts',
   ];
 
   var index = (day * 3 + Math.floor(hour / 8)) % titles.length;
 
   return {
     title: titles[index],
-    description: 'Daily dose of funny animals! 😂\n' +
-      'Watch the funniest animal moments of the day.\n' +
-      'Like & Subscribe for more funny animals every day!\n\n' +
-      '#FunnyAnimals #FunnyCats #FunnyDogs #Pets #Shorts ' +
-      '#Animals #Hilarious #Comedy #PetFails #CutePets',
+    description: '😂 Daily funny & cute animal videos!\n' +
+      'Like and Subscribe for more animal content every day!\n\n' +
+      '#FunnyAnimals #CuteAnimals #Pets #Cats #Dogs #Shorts #Animals #Funny #Viral #PetVideos',
     tags: [
-      'funny animals', 'funny cats', 'funny dogs',
-      'animal fails', 'cute pets', 'shorts', 'animals',
-      'hilarious', 'pets', 'comedy', 'pet videos', 'try not to laugh',
+      'funny animals', 'cute animals', 'funny cats', 'funny dogs',
+      'pets', 'animals', 'shorts', 'viral', 'funny', 'cute',
+      'cat videos', 'dog videos', 'animal videos', 'pet videos',
+      'try not to laugh', 'funny pet moments',
     ],
   };
 }
