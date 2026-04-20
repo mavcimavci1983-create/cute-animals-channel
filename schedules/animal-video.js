@@ -50,45 +50,46 @@ function sleep(ms) {
 
 function getPexelsQueries() {
   var allQueries = [
-    'funny cat fails',
-    'dog playing funny',
-    'baby goat jumping',
-    'funny hamster running wheel',
+    'funny cat reaction',
+    'dog playing silly',
+    'goat jumping crazy',
+    'hamster running wheel',
     'puppy zoomies',
-    'cat scared funny',
-    'dog fail funny',
-    'kitten playing attacking',
-    'funny rabbit',
-    'corgi running',
-    'cat knocking things',
+    'cat knocking over',
     'dog confused funny',
-    'baby duck walking',
-    'cat box funny',
-    'dog eating messy funny',
-    'goat screaming',
-    'cat mirror reaction',
-    'puppy howling',
-    'dog zoomies grass',
-    'animals funny compilation',
-    'cat chattering',
-    'puppy playing ball',
-    'dog shaking head',
+    'kitten attacking toy',
+    'corgi running',
+    'dog head tilt',
     'cat loaf funny',
-    'ferret playing funny',
-    'bunny binkying',
-    'dog tail chasing',
-    'cat spinning funny',
     'puppy hiccups',
-    'dog head tilt funny',
+    'dog tail chase',
+    'cat mirror funny',
+    'ferret playing',
+    'bunny binkying',
+    'dog shaking head',
+    'cat spinning',
+    'puppy sleeping funny',
+    'dog eating messy',
+    'cat scared jump',
+    'dog fail',
+    'cat chattering',
+    'puppy howling',
+    'goat screaming',
+    'dog zoomies',
+    'cat box sitting',
+    'dog begging funny',
+    'kitten pouncing',
+    'cat stretching funny',
   ];
 
   var now = new Date();
-  var seed = now.getDate() * 100 + now.getUTCHours();
+  // Gün + saat + dakika — her çalışmada farklı
+  var seed = now.getDate() * 1000 + now.getUTCHours() * 10 + Math.floor(now.getUTCMinutes() / 20);
   var start = seed % allQueries.length;
   var selected = [];
 
   for (var i = 0; i < 8; i++) {
-    selected.push(allQueries[(start + i * 4) % allQueries.length]);
+    selected.push(allQueries[(start + i * 3) % allQueries.length]);
   }
 
   console.log('Sorgular:', selected.slice(0, 4).join(', ') + '...');
@@ -314,41 +315,43 @@ function getMetadata() {
   var hour = (now.getUTCHours() + 3) % 24;
 
   var titles = [
-    'When cats do the UNEXPECTED 😹 #cats #funny #shorts',
-    'This dog made everyone laugh 😂 #dogs #funny #shorts',
-    'POV: Your pet is a comedian 🐾 #pets #funny #shorts',
-    'Try not to laugh at these animals 😂 #animals #shorts',
-    'Animals being absolutely unhinged 😹 #funny #shorts',
-    'Your daily dose of animal therapy 🐾 #cute #shorts',
-    'This little guy has no fear 😂 #animals #funny #shorts',
-    'Animals that broke the internet 😹 #viral #shorts',
-    'When your pet has main character energy 😂 #pets #shorts',
-    'Real reason why we love animals 🥰 #animals #shorts',
-    'Animals doing their best impression 😹 #funny #shorts',
-    'This made my day instantly 😂 #animals #cute #shorts',
-    'POV: Animals are living their best life 🐾 #shorts',
-    'Funniest animal moments of the week 😹 #shorts',
-    'Animals that deserve an Oscar 😂 #funny #shorts',
-    'When animals have zero chill 😹 #cats #dogs #shorts',
-    'These animals are too precious 🥰 #cute #shorts',
-    'Animals caught in 4K being funny 😂 #shorts',
-    'Nobody told them they were being recorded 😹 #shorts',
-    'Animals living rent free in my head 😂 #shorts',
-    'The most wholesome animal video today 🥰 #shorts',
+    'Animals Being Total Goofballs 😹 #shorts #funny',
+    'Animals With Absolutely Zero Chill 😂 #shorts',
+    'POV: Your pet is completely unhinged 😹 #shorts',
+    'Animals that broke the internet today 😂 #shorts',
+    'Nobody told them the camera was on 😹 #shorts',
+    'Animals doing the absolute most 😂 #shorts #funny',
+    'When animals have main character energy 😹 #shorts',
+    'These animals need to be stopped 😂 #shorts',
+    'Animals being derps compilation 😹 #shorts #funny',
+    'Wait for it... 😂 #animals #shorts #funny',
+    'Animals that made me lose it 😹 #shorts',
+    'POV: Animals have no idea whats happening 😂 #shorts',
+    'The audacity of these animals 😹 #shorts #funny',
+    'Animals caught in 4K being chaotic 😂 #shorts',
+    'I cannot with these animals 😹 #shorts #funny',
+    'Animals living their absolute best life 😂 #shorts',
+    'When your pet is a whole comedian 😹 #shorts',
+    'Animals that said nope to everything 😂 #shorts',
+    'Certified animal unhinged moments 😹 #shorts',
+    'Animals being silly little guys 😂 #shorts #funny',
+    'The way this animal said choose violence 😹 #shorts',
   ];
 
   var index = (day * 3 + Math.floor(hour / 8)) % titles.length;
 
   return {
     title: titles[index],
-    description: '😂 Daily funny & cute animal videos!\n' +
-      'Like and Subscribe for more animal content every day!\n\n' +
-      '#FunnyAnimals #CuteAnimals #Pets #Cats #Dogs #Shorts #Animals #Funny #Viral #PetVideos',
+    description: '😂 Daily funny animal videos on Funny Animals Daily!\n' +
+      'New videos every day - Like & Subscribe!\n\n' +
+      '#FunnyAnimals #FunnyAnimalDaily #Pets #Cats #Dogs ' +
+      '#Shorts #Animals #Funny #Viral #GoofballAnimals #UnhingedAnimals',
     tags: [
-      'funny animals', 'cute animals', 'funny cats', 'funny dogs',
-      'pets', 'animals', 'shorts', 'viral', 'funny', 'cute',
-      'cat videos', 'dog videos', 'animal videos', 'pet videos',
-      'try not to laugh', 'funny pet moments',
+      'funny animals', 'funny animals daily', 'animal goofballs',
+      'unhinged animals', 'funny cats', 'funny dogs', 'pets',
+      'animals', 'shorts', 'viral', 'funny', 'animal compilation',
+      'wait for it', 'zero chill animals', 'chaotic animals',
+      'try not to laugh', 'funny pet moments', 'animals being silly',
     ],
   };
 }
