@@ -1,4 +1,4 @@
-name: Cute Animals Channel
+name: Wildlife Family Channel
 
 on:
   workflow_dispatch:
