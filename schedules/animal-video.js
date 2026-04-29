@@ -170,52 +170,81 @@ async function downloadWildlifeVideos(theme) {
   for (var i = 0; i < theme.queries.length; i++) {
     if (paths.length >= 5) break;
 
+    var query = theme.queries[i];
+
+    // ─── PEXELS ───────────────────────────────────────────
     try {
-      // Portrait dene
-      var response = await fetch(
+      var pResponse = await fetch(
         'https://api.pexels.com/videos/search?query=' +
-        encodeURIComponent(theme.queries[i]) +
-        '&per_page=10&orientation=portrait&page=' + page,
+        encodeURIComponent(query) + '&per_page=10&page=' + page,
         { headers: { Authorization: PEXELS_API_KEY } }
       );
-      var data = await response.json();
-      var videos = data.videos || [];
+      var pData = await pResponse.json();
+      var pVideos = pData.videos || [];
 
-      // Landscape dene
-      if (videos.length === 0) {
-        response = await fetch(
-          'https://api.pexels.com/videos/search?query=' +
-          encodeURIComponent(theme.queries[i]) +
-          '&per_page=10&page=' + page,
-          { headers: { Authorization: PEXELS_API_KEY } }
-        );
-        data = await response.json();
-        videos = data.videos || [];
-      }
-
-      for (var j = 0; j < videos.length; j++) {
+      for (var j = 0; j < pVideos.length; j++) {
         if (paths.length >= 5) break;
-        if (usedIds.indexOf(videos[j].id) !== -1) continue;
+        if (usedIds.indexOf('p_' + pVideos[j].id) !== -1) continue;
 
-        var vf = videos[j].video_files
+        var vf = pVideos[j].video_files
           .filter(function(f) { return f.width && f.height; })
           .sort(function(a, b) { return b.height - a.height; })[0];
 
         if (!vf) continue;
 
-        usedIds.push(videos[j].id);
+        usedIds.push('p_' + pVideos[j].id);
         var vPath = '/tmp/wildlife_' + paths.length + '.mp4';
-        console.log('  Downloading:', theme.queries[i], '| ID:', videos[j].id);
+        console.log('  [Pexels]', query, '| ID:', pVideos[j].id);
         await downloadFile(vf.link, vPath);
         paths.push(vPath);
-        await sleep(400);
+        await sleep(300);
       }
     } catch(e) {
-      console.log('  Error:', theme.queries[i], e.message);
+      console.log('  Pexels error:', e.message);
+    }
+
+    if (paths.length >= 5) break;
+
+    // ─── PİXABAY VIDEO ────────────────────────────────────
+    try {
+      var xResponse = await fetch(
+        'https://pixabay.com/api/videos/?key=' + PIXABAY_API_KEY +
+        '&q=' + encodeURIComponent(query) +
+        '&video_type=film&per_page=15&page=' + page + '&safesearch=true'
+      );
+      var xData = JSON.parse(await xResponse.text());
+      var xVideos = xData.hits || [];
+
+      for (var k = 0; k < xVideos.length; k++) {
+        if (paths.length >= 5) break;
+        if (usedIds.indexOf('x_' + xVideos[k].id) !== -1) continue;
+
+        // En iyi kaliteyi seç
+        var xVideo = xVideos[k];
+        var videoUrl = null;
+        if (xVideo.videos.large && xVideo.videos.large.url) {
+          videoUrl = xVideo.videos.large.url;
+        } else if (xVideo.videos.medium && xVideo.videos.medium.url) {
+          videoUrl = xVideo.videos.medium.url;
+        } else if (xVideo.videos.small && xVideo.videos.small.url) {
+          videoUrl = xVideo.videos.small.url;
+        }
+
+        if (!videoUrl) continue;
+
+        usedIds.push('x_' + xVideos[k].id);
+        var xPath = '/tmp/wildlife_' + paths.length + '.mp4';
+        console.log('  [Pixabay]', query, '| ID:', xVideos[k].id);
+        await downloadFile(videoUrl, xPath);
+        paths.push(xPath);
+        await sleep(300);
+      }
+    } catch(e) {
+      console.log('  Pixabay error:', e.message);
     }
   }
 
-  console.log(paths.length, 'videos downloaded');
+  console.log(paths.length, 'videos downloaded (Pexels + Pixabay)');
   if (paths.length < 2) throw new Error('Not enough videos: ' + paths.length);
   return paths;
 }
